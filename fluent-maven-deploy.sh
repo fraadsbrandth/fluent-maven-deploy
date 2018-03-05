@@ -197,7 +197,7 @@ if [[ ${GOAL^^} == "DEPLOY" ]]; then
   git add --all
   GIT_COMMIT_MESSAGE="${COMMIT_PREFIX}${SEMVER_UPDATE} update from ${CURRENT_VERSION} to ${NEW_VERSION}"
   git commit -m "${GIT_COMMIT_MESSAGE}"
-  # TODO: git push origin master
+  git push origin master
 else
   echo "[INFO] Skipping update of repostory since maven goal ${GOAL} != deploy."
 fi

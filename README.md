@@ -1,7 +1,11 @@
 # Fluent Maven Deploy
 
 ## Motivation
-TODO
+- Avoid manual maven releases
 
 ## Prerequisite
-TODO
+- Maven project using GIT
+- GIT installed
+- Maven installed
+- No SNAPSHOT dependencies
+- Version on SEMVER format

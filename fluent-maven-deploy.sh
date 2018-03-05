@@ -70,7 +70,6 @@ function getSemverUpdateFromLatestGitCommitMessage() {
     fi
 }
 
-
 SEMVER_UPDATE=$(getSemverUpdateFromLatestGitCommitMessage)
 if [ ${SEMVER_UPDATE} == "skip" ]; then
     echo "[INFO] No deploy needed"
@@ -86,6 +85,10 @@ fi
 for i in "$@"
 do
 case ${i} in
+    --goal=*)
+    GOAL="${i#*=}"
+    shift
+    ;;
     --options=*)
     OPTIONS="${i#*=}"
     shift
@@ -94,9 +97,14 @@ case ${i} in
     # unknown option
     ;;
 esac
+# Default values
+if [ -z ${GOAL+x} ]; then
+  GOAL="deploy"
+fi
 done
 
 echo "[INFO] Resolved arguments"
+echo "- GOAL=${GOAL}"
 echo "- OPTIONS=${OPTIONS}"
 
 CURRENT_VERSION=$(mvn -q \
@@ -134,7 +142,6 @@ else
     finalize 1
 fi
 
-
 # Verify semver part of version
 function ensureNumber() {
     local regex='^[0-9]+$'
@@ -150,7 +157,6 @@ ensureNumber ${CURRENT_VERSION_ARRAY[0]}
 ensureNumber ${CURRENT_VERSION_ARRAY[1]}
 ensureNumber ${CURRENT_VERSION_ARRAY[2]}
 echo " - Current semver version is properly formatted"
-
 
 # Checking for SNAPSHOT
 if grep -r --include="*pom.xml" "\-SNAPSHOT" "."; then
@@ -186,11 +192,15 @@ echo " - New version is ${NEW_VERSION}"
 echo " - Updating version"
 mvn versions:set -DnewVersion=${NEW_VERSION}
 
+if [[ ${GOAL^^} == "DEPLOY" ]]; then
+  echo "[INFO] Updating repository"
+  git add --all
+  GIT_COMMIT_MESSAGE="${COMMIT_PREFIX}${SEMVER_UPDATE} update from ${CURRENT_VERSION} to ${NEW_VERSION}"
+  git commit -m "${GIT_COMMIT_MESSAGE}"
+  # TODO: git push origin master
+else
+  echo "[INFO] Skipping update of repostory since maven goal ${GOAL} != deploy."
+fi
 
-echo "[INFO] Updating repository"
-git add --all
-GIT_COMMIT_MESSAGE="${COMMIT_PREFIX}${SEMVER_UPDATE} update from ${CURRENT_VERSION} to ${NEW_VERSION}"
-git commit -m "${GIT_COMMIT_MESSAGE}"
-# TODO: git push origin master
-# TODO: deploy not install
-eval mvn clean install -U ${OPTIONS}
+echo "[INFO] Performing maven ${GOAL}"
+eval mvn clean ${GOAL} -U ${OPTIONS}

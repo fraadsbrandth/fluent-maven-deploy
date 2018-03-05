@@ -194,7 +194,7 @@ mvn versions:set -DnewVersion=${NEW_VERSION}
 
 if [[ ${GOAL^^} == "DEPLOY" ]]; then
   echo "[INFO] Updating repository"
-  git add --all
+  git add "./*pom.xml"
   GIT_COMMIT_MESSAGE="${COMMIT_PREFIX}${SEMVER_UPDATE} update from ${CURRENT_VERSION} to ${NEW_VERSION}"
   git commit -m "${GIT_COMMIT_MESSAGE}"
   git push origin master

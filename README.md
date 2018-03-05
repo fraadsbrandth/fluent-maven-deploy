@@ -2,6 +2,7 @@
 
 ## Motivation
 - Avoid manual maven releases
+- https://blog.philipphauer.de/version-numbers-continuous-delivery-maven-docker/
 
 ## Prerequisite
 - Maven project using GIT

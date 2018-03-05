@@ -2,6 +2,8 @@
 
 SCRIPT_NAME=$0
 COMMIT_PREFIX="[#deploy] -> "
+GIT_POM_REGEX="./*pom.xml"
+
 echo "[START] ${SCRIPT_NAME} starting"
 
 function finalize() {
@@ -29,17 +31,6 @@ function ensureRequiredPrograms() {
     fi
 }
 ensureRequiredPrograms
-
-function ensureMasterBranch() {
-  local branch=$(git symbolic-ref --short -q HEAD)
-  if [[ (${branch} == "master") ]]; then
-    echo "[INFO] Currently on master branch."
-  else
-    echo "[ERROR] Deployment can only be done on master branch."
-    finalize 1
-  fi
-}
-ensureMasterBranch
 
 function ensureNoUntrackedChanges() {
     if [[ -n $(git status -s) ]]; then
@@ -97,11 +88,12 @@ case ${i} in
     # unknown option
     ;;
 esac
+done
+
 # Default values
 if [ -z ${GOAL+x} ]; then
   GOAL="deploy"
 fi
-done
 
 echo "[INFO] Resolved arguments"
 echo "- GOAL=${GOAL}"
@@ -180,6 +172,26 @@ function getBumpedSemverVersion() {
     fi
 }
 
+# Roll back changes
+function rollback() {
+    echo "[INFO] Rolling back version bump"
+    git checkout "${GIT_POM_REGEX}"
+}
+
+# Ensure we are on master branch
+function ensureMasterBranch() {
+    local branch=$(git symbolic-ref --short -q HEAD)
+    if [[ (${branch} == "master") ]]; then
+        echo "[INFO] Currently on master branch."
+    else
+        echo "[ERROR] Deployment can only be done on master branch."
+        echo " - Current branch is ${branch}"
+        rollback
+        finalize 1
+    fi
+}
+
+
 # Setting new version
 CURRENT_SEMVER_VERSION=${CURRENT_VERSION_ARRAY[0]}.${CURRENT_VERSION_ARRAY[1]}.${CURRENT_VERSION_ARRAY[2]}
 NEW_SEMVER_VERSION=$(getBumpedSemverVersion ${CURRENT_VERSION} ${SEMVER_UPDATE})
@@ -190,17 +202,26 @@ echo " - Current semver version is ${CURRENT_SEMVER_VERSION}"
 echo " - New semver version is ${NEW_SEMVER_VERSION}"
 echo " - New version is ${NEW_VERSION}"
 echo " - Updating version"
-mvn versions:set -DnewVersion=${NEW_VERSION}
+mvn -q versions:set -DnewVersion=${NEW_VERSION}
+echo " - New version set on project"
 
 if [[ ${GOAL^^} == "DEPLOY" ]]; then
+  ensureMasterBranch
   echo "[INFO] Updating repository"
-  git add "./*pom.xml"
+  git add "${GIT_POM_REGEX}"
   GIT_COMMIT_MESSAGE="${COMMIT_PREFIX}${SEMVER_UPDATE} update from ${CURRENT_VERSION} to ${NEW_VERSION}"
   git commit -m "${GIT_COMMIT_MESSAGE}"
   git push origin master
 else
-  echo "[INFO] Skipping update of repostory since maven goal ${GOAL} != deploy."
+  echo "[INFO] Skipping update of repository since maven goal ${GOAL} != deploy."
 fi
 
 echo "[INFO] Performing maven ${GOAL}"
 eval mvn clean ${GOAL} -U ${OPTIONS}
+
+
+if [[ ${GOAL^^} != "DEPLOY" ]]; then
+    rollback
+fi
+
+finalize 0

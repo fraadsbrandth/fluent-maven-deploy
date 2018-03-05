@@ -4,7 +4,8 @@
 - https://blog.philipphauer.de/version-numbers-continuous-delivery-maven-docker/
 - Avoid manual maven releases
 - (Avoid use of the Maven Realease Plugin)
-- No ambiguous versions
+- No ambiguous versions (read SNAPSHOT)
+- No upstream/downstream/scheduled builds needed when no SNAPSHOT's are in use
 - No scm tag needed in your pom.xml
 - No changes/plugins needed in pom.xml -> Easily adaptable to old projects without code changes (just a properly formatted SEMVER version)
 

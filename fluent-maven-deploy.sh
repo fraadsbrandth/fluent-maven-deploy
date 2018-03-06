@@ -191,6 +191,19 @@ function ensureMasterBranch() {
     fi
 }
 
+# Ensure same revision as on origin
+function ensureOriginRevision() {
+  local gitShortHashOrigin=$(git rev-parse --short origin/master)
+  if [[ "${gitShortHashOrigin}" == "${GIT_SHORT_HASH}" ]]; then
+      echo "[INFO] Currently on same revision as origin master (${gitShortHashOrigin})."
+  else
+      echo "[ERROR] Deployment not be done with unpushed code."
+      echo " - Local revision ${GIT_SHORT_HASH} != ${gitShortHashOrigin} on origin/master."
+      rollback
+      finalize 1
+  fi
+
+}
 
 # Setting new version
 CURRENT_SEMVER_VERSION=${CURRENT_VERSION_ARRAY[0]}.${CURRENT_VERSION_ARRAY[1]}.${CURRENT_VERSION_ARRAY[2]}
@@ -207,6 +220,7 @@ echo " - New version set on project"
 
 if [[ ${GOAL^^} == "DEPLOY" ]]; then
   ensureMasterBranch
+  ensureOriginRevision
   echo "[INFO] Updating repository"
   git add "${GIT_POM_REGEX}"
   GIT_COMMIT_MESSAGE="${COMMIT_PREFIX}${SEMVER_UPDATE} update from ${CURRENT_VERSION} to ${NEW_VERSION}"

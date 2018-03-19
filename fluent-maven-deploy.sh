@@ -103,6 +103,7 @@ CURRENT_VERSION=$(mvn -q \
     -Dexec.executable="echo" \
     -Dexec.args='${project.version}' \
     --non-recursive \
+    ${OPTIONS} \
     org.codehaus.mojo:exec-maven-plugin:1.6.0:exec)
 
 CURRENT_VERSION_ARRAY=(${CURRENT_VERSION//./ })
@@ -215,7 +216,7 @@ echo " - Current semver version is ${CURRENT_SEMVER_VERSION}"
 echo " - New semver version is ${NEW_SEMVER_VERSION}"
 echo " - New version is ${NEW_VERSION}"
 echo " - Updating version"
-mvn -q versions:set -DnewVersion=${NEW_VERSION}
+mvn -q versions:set -DnewVersion=${NEW_VERSION} ${OPTIONS}
 echo " - New version set on project"
 
 if [[ ${GOAL^^} == "DEPLOY" ]]; then
